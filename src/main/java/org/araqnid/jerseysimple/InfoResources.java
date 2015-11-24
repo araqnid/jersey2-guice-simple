@@ -1,9 +1,13 @@
 package org.araqnid.jerseysimple;
 
+import java.util.Map;
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+
+import com.google.common.collect.ImmutableMap;
 
 @Path("info")
 public class InfoResources {
@@ -28,5 +32,12 @@ public class InfoResources {
 	@Produces("text/plain")
 	public String serverInfo() {
 		return serverInfo;
+	}
+
+	@GET
+	@Path("_all")
+	@Produces("application/json")
+	public Map<String, String> combinedInfo() {
+		return ImmutableMap.of("version", version, "server", serverInfo);
 	}
 }

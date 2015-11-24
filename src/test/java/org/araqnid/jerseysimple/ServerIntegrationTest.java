@@ -4,8 +4,6 @@ import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpStatus;
@@ -14,13 +12,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.hamcrest.collection.IsMapContaining;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.inject.Guice;
@@ -35,35 +35,58 @@ import jersey.repackaged.com.google.common.base.Throwables;
 
 @RunWith(Parameterized.class)
 public class ServerIntegrationTest {
-	@Parameters(name = "{1} {0}")
-	public static List<Object[]> combinations() {
-		List<Object[]> combinations = new ArrayList<>();
-		for (AppConfig.ServerFlavour serverFlavour : AppConfig.ServerFlavour.values()) {
-			for (String path : ImmutableList.of("/", "/info/version", "/info/server")) {
-				combinations.add(new Object[] { path, serverFlavour });
-			}
-		}
-		return combinations;
+	@Parameters(name = "{0}")
+	public static AppConfig.ServerFlavour[] combinations() {
+		return AppConfig.ServerFlavour.values();
 	}
 
-	@Parameter(0)
-	public String path;
-
-	@Parameter(1)
+	@Parameter
 	public AppConfig.ServerFlavour serverFlavour;
 
 	@Test
-	public void get_content() throws Exception {
-		try (ServerRunner server = new ServerRunner(ImmutableMap.of("FLAVOUR", serverFlavour.toString()))) {
+	public void root() throws Exception {
+		try (ServerRunner server = makeServer()) {
 			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri(path)))) {
+				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri("/")))) {
 					assertThat(resp.getStatusLine().getStatusCode(), equalTo(HttpStatus.SC_OK));
 				}
 			}
 		}
 	}
 
-	public static class ServerRunner implements Closeable {
+	@Test
+	public void server_version() throws Exception {
+		try (ServerRunner server = makeServer()) {
+			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri("/info/version")))) {
+					assertThat(resp.getStatusLine().getStatusCode(), equalTo(HttpStatus.SC_OK));
+					assertThat(resp.getEntity().getContentType().getValue(), equalTo("text/plain"));
+				}
+			}
+		}
+	}
+
+	@Test
+	public void json_info() throws Exception {
+		try (ServerRunner server = makeServer()) {
+			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri("/info/_all")))) {
+					assertThat(resp.getStatusLine().getStatusCode(), equalTo(HttpStatus.SC_OK));
+					assertThat(resp.getEntity().getContentType().getValue(), equalTo("application/json"));
+					ObjectMapper mapper = new ObjectMapper();
+					Map<String, String> info = mapper.reader(new TypeReference<Map<String, String>>() {
+					}).readValue(resp.getEntity().getContent());
+					assertThat(info, IsMapContaining.hasEntry("version", "0.0.0"));
+				}
+			}
+		}
+	}
+
+	private ServerRunner makeServer() {
+		return new ServerRunner(ImmutableMap.of("FLAVOUR", serverFlavour.toString()));
+	}
+
+	private static final class ServerRunner implements Closeable {
 		private final Injector injector;
 
 		public ServerRunner(Map<String, String> environment) {
@@ -74,14 +97,6 @@ public class ServerIntegrationTest {
 		@Override
 		public void close() {
 			getInstance(ServiceManager.class).stopAsync().awaitStopped();
-		}
-
-		public URI uri() {
-			try {
-				return new URIBuilder().setScheme("http").setHost("localhost").setPort(port()).build();
-			} catch (URISyntaxException e) {
-				throw Throwables.propagate(e);
-			}
 		}
 
 		public URI uri(String path) {

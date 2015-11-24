@@ -9,7 +9,7 @@ sourceCompatibility = 1.8
 ext {
     jettyVersion = '9.2.10.v20150310'
     jerseyVersion = '2.17'
-    guiceVersion = '4.0-beta5'
+    guiceVersion = '4.0'
 }
 
 dependencies {

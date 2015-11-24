@@ -7,7 +7,7 @@ mainClassName = "org.araqnid.jerseysimple.Main"
 sourceCompatibility = 1.8
 
 ext {
-    jettyVersion = '9.2.10.v20150310'
+    jettyVersion = '9.2.14.v20151106'
     jerseyVersion = '2.17'
     guiceVersion = '4.0'
 }

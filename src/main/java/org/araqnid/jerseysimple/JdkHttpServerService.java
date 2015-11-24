@@ -36,7 +36,7 @@ public class JdkHttpServerService extends AbstractIdleService {
 		uri = UriBuilder.fromUri("http://localhost/").port(port).build();
 		ResourceConfig resourceConfig = new ResourceConfig(
 				ImmutableSet.<Class<?>> builder().addAll(resourceClasses).add(EventListener.class).build());
-		String serverName = "http-" + port + "-" + SERVER_INDEX.getAndIncrement();
+		String serverName = "jdk-" + port + "-" + SERVER_INDEX.getAndIncrement();
 		ServiceLocator serviceLocator = ServiceLocatorFactory.getInstance().create(serverName);
 		GuiceBridge.getGuiceBridge().initializeGuiceBridge(serviceLocator);
 		serviceLocator.getService(GuiceIntoHK2Bridge.class).bridgeGuiceInjector(injector);

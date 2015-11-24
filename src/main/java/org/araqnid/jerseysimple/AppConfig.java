@@ -36,7 +36,10 @@ public class AppConfig extends AbstractModule {
 
 		switch (serverFlavour().orElse(ServerFlavour.JDK)) {
 		case JETTY:
-			install(new JettyModule());
+			install(new JettyHttpModule());
+			break;
+		case JETTY_SERVLET:
+			install(new JettyServletModule());
 			break;
 		case JDK:
 			install(new JdkHttpServerModule());
@@ -85,13 +88,25 @@ public class AppConfig extends AbstractModule {
 	}
 
 	public enum ServerFlavour {
-		JETTY, JDK;
+		JETTY, JETTY_SERVLET, JDK;
 	}
 
-	public static class JettyModule extends AbstractModule {
+	public static class JettyHttpModule extends AbstractModule {
 		@Override
 		protected void configure() {
-			services().addBinding().to(JettyService.class);
+			services().addBinding().to(JettyHttpService.class);
+			bindConstant().annotatedWith(ServerInfo.class).to("Jetty/" + Jetty.VERSION);
+		}
+
+		private Multibinder<Service> services() {
+			return Multibinder.newSetBinder(binder(), Service.class);
+		}
+	}
+
+	public static class JettyServletModule extends AbstractModule {
+		@Override
+		protected void configure() {
+			services().addBinding().to(JettyServletService.class);
 			bindConstant().annotatedWith(ServerInfo.class).to("Jetty/" + Jetty.VERSION);
 		}
 

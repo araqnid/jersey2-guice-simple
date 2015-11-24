@@ -19,12 +19,12 @@ import org.jvnet.hk2.guice.bridge.api.GuiceIntoHK2Bridge;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.inject.Injector;
 
-public class JettyService extends AbstractIdleService {
+public class JettyHttpService extends AbstractIdleService {
 	private static final AtomicInteger SERVER_INDEX = new AtomicInteger();
 	private final Server server;
 
 	@Inject
-	public JettyService(Injector injector, @Port int port, @Resources Set<Class<?>> resourceClasses) {
+	public JettyHttpService(Injector injector, @Port int port, @Resources Set<Class<?>> resourceClasses) {
 		URI baseUri = UriBuilder.fromUri("http://localhost/").port(port).build();
 		ResourceConfig config = new ResourceConfig(resourceClasses);
 		String serverName = "http-" + port + "-" + SERVER_INDEX.getAndIncrement();

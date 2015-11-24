@@ -38,7 +38,7 @@ public class SleepResource {
 		executor.schedule(() -> {
 			LOG.info("scheduled action");
 			asyncResponse.resume("completed on " + Thread.currentThread().getName());
-		}, 1, TimeUnit.SECONDS);
+		} , 1, TimeUnit.SECONDS);
 		LOG.info("exiting sleep()");
 	}
 

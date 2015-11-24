@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.araqnid.jerseysimple.AppConfig.ServerFlavour;
 import org.hamcrest.collection.IsMapContaining;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,6 +30,9 @@ import com.google.inject.Key;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assume.assumeThat;
 
 import jersey.repackaged.com.google.common.base.Preconditions;
 import jersey.repackaged.com.google.common.base.Throwables;
@@ -59,6 +63,20 @@ public class ServerIntegrationTest {
 		try (ServerRunner server = makeServer()) {
 			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri("/info/version")))) {
+					assertThat(resp.getStatusLine().getStatusCode(), equalTo(HttpStatus.SC_OK));
+					assertThat(resp.getEntity().getContentType().getValue(), equalTo("text/plain"));
+				}
+			}
+		}
+	}
+
+	@Test
+	public void sleep() throws Exception {
+		assumeThat("suspending requests not supported with JDK server", serverFlavour,
+				is(not(equalTo(ServerFlavour.JDK))));
+		try (ServerRunner server = makeServer()) {
+			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri("/sleep")))) {
 					assertThat(resp.getStatusLine().getStatusCode(), equalTo(HttpStatus.SC_OK));
 					assertThat(resp.getEntity().getContentType().getValue(), equalTo("text/plain"));
 				}

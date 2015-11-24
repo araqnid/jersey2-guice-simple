@@ -2,6 +2,7 @@ package org.araqnid.jerseysimple;
 
 import java.net.URI;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.UriBuilder;
@@ -26,6 +27,7 @@ import com.sun.net.httpserver.HttpServer;
 
 public class JdkHttpServerService extends AbstractIdleService {
 	private static final Logger LOG = LoggerFactory.getLogger(JdkHttpServerService.class);
+	private static final AtomicInteger SERVER_INDEX = new AtomicInteger();
 	private final URI uri;
 	private final HttpServer server;
 
@@ -34,7 +36,8 @@ public class JdkHttpServerService extends AbstractIdleService {
 		uri = UriBuilder.fromUri("http://localhost/").port(port).build();
 		ResourceConfig resourceConfig = new ResourceConfig(
 				ImmutableSet.<Class<?>> builder().addAll(resourceClasses).add(EventListener.class).build());
-		ServiceLocator serviceLocator = ServiceLocatorFactory.getInstance().create("http-" + port);
+		String serverName = "http-" + port + "-" + SERVER_INDEX.getAndIncrement();
+		ServiceLocator serviceLocator = ServiceLocatorFactory.getInstance().create(serverName);
 		GuiceBridge.getGuiceBridge().initializeGuiceBridge(serviceLocator);
 		serviceLocator.getService(GuiceIntoHK2Bridge.class).bridgeGuiceInjector(injector);
 		server = JdkHttpServerFactory.createHttpServer(uri, resourceConfig, serviceLocator, /* sslContext */ null,

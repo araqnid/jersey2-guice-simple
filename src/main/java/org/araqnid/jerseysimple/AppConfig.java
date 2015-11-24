@@ -56,8 +56,8 @@ public class AppConfig extends AbstractModule {
 	@SleepResource.ThreadPool
 	@Singleton
 	public ScheduledExecutorService sleepResourceThreadPool() {
-		return Executors
-				.newScheduledThreadPool(4, new ThreadFactoryBuilder().setNameFormat("SleepResource-%d").build());
+		return Executors.newScheduledThreadPool(4,
+				new ThreadFactoryBuilder().setNameFormat("SleepResource-%d").build());
 	}
 
 	private Optional<String> getenv(String name) {

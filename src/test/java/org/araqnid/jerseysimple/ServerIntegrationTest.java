@@ -4,13 +4,9 @@ import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.EnumSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import jersey.repackaged.com.google.common.base.Preconditions;
-import jersey.repackaged.com.google.common.base.Throwables;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -18,10 +14,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.junit.experimental.theories.DataPoints;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
+import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -33,16 +30,30 @@ import com.google.inject.Key;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith(Theories.class)
+import jersey.repackaged.com.google.common.base.Preconditions;
+import jersey.repackaged.com.google.common.base.Throwables;
+
+@RunWith(Parameterized.class)
 public class ServerIntegrationTest {
-	@DataPoints
-	public static List<String> paths = ImmutableList.of("/", "/info/version", "/info/server");
+	@Parameters(name = "{1} {0}")
+	public static List<Object[]> combinations() {
+		List<Object[]> combinations = new ArrayList<>();
+		for (AppConfig.ServerFlavour serverFlavour : AppConfig.ServerFlavour.values()) {
+			for (String path : ImmutableList.of("/", "/info/version", "/info/server")) {
+				combinations.add(new Object[] { path, serverFlavour });
+			}
+		}
+		return combinations;
+	}
 
-	@DataPoints
-	public static Set<AppConfig.ServerFlavour> serverFlavours = EnumSet.allOf(AppConfig.ServerFlavour.class);
+	@Parameter(0)
+	public String path;
 
-	@Theory
-	public void get_content(String path, AppConfig.ServerFlavour serverFlavour) throws Exception {
+	@Parameter(1)
+	public AppConfig.ServerFlavour serverFlavour;
+
+	@Test
+	public void get_content() throws Exception {
 		try (ServerRunner server = new ServerRunner(ImmutableMap.of("FLAVOUR", serverFlavour.toString()))) {
 			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 				try (CloseableHttpResponse resp = httpClient.execute(new HttpGet(server.uri(path)))) {
